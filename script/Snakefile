@@ -1,0 +1,74 @@
+configfile: "config.yaml"
+workdir: config['workdir']
+
+# It is best practice to have subsequent steps of a workflow in
+# separate, unique, output folders. This keeps the working directory
+# structured. Further, such unique prefixes allow Snakemake to prune
+# the search space for dependencies.
+
+# Trick to run many jobs in parallel
+# while I= read -r i ; do snakemake --cores 8 -p $i ; done < foo.txt
+#
+
+#envvars:
+#    "LC_NUMERIC='en_US.UTF-8'"
+
+jhparams=config['jhparams']
+dockq=config['dockq']
+SingImage=config['SingImage']
+trRosettaPath=config['trRosettaPath']
+cns_solve=config['cns_solve']
+scriptPath=config['scriptPath']
+databasePath=config['databasePath']
+modelpath=config['modelpath']
+
+SEQ_FILE = '/home/fabiana/dataset/fasta_file/{seq}.fasta'
+SEQ_NAMES = glob_wildcards(SEQ_FILE).seq
+print(SEQ_NAMES)
+
+rule all:
+    input:
+        # ALL_MSA = expand('msa/{seq}.a3m', seq=SEQ_NAMES),
+        ALL_NPZ = expand('distpred/{seq}.npz', seq=SEQ_NAMES),
+        # ANALYZE = expand('results/{seq}.analyze',seq=SEQ_NAMES),
+        # PNG = expand("results/{seq}.png",seq=SEQ_NAMES),
+        # PDB=expand("pymodel/{seq}_A-{seq}_B.pdb",seq=SEQ_NAMES)
+
+# rule msa:
+#     input:
+#         "seq/{seq}_A.fasta"
+#     output:
+#         "msa/{seq}.a3m"
+#     shell:
+#         "jackhmmer  {jhparams} -A {output} {input} {databasePath}  "
+#         "hhblits -cpu 8 -i {input} -d {databasePath} -oa3m {output} -n 3 -Z 10000 -z 1 -b 1 -B 10000 "
+
+rule predict:
+    input:
+        "msa/{seq}.a3m"
+    output:
+        "distpred/{seq}.npz"
+    shell:
+        "singularity run {SingImage}  python3 {trRosettaPath}/network/predict.py -m  {trRosettaPath}/model2019_07  {input} {output}"
+
+# rule analyze:
+#     input:
+#        NPZ="distpred/{seq}.npz",
+#        FA="seq/{seq}.fasta"
+#     #       PDB="pdb/{seq}.pdb"
+#     output:
+#        ANALYZE="results/{seq}.analyze",
+#        PNG="results/{seq}.png"
+#     shell:
+#        #"python3 {scriptPath}analyze_npz.py -i {input.NPZ} -s {input.FA} -p {input.PDB} -o {output.PNG} > {output.ANALYZE}"
+#        "python3 {scriptPath}analyze_npz.py -i {input.NPZ} -s {input.FA} -o {output.PNG} > {output.ANALYZE}"
+#
+# # rule pyrosetta:
+# #     input:
+# #        NPZ="distpred/{seq}.npz",
+# #        A="seq_prova_A/{seq}_A.fasta",
+# #        B="seq_prova_B/{seq}_B.fasta"
+# #     output:
+# #         "pymodel/{seq}_A-{seq}_B.pdb"
+# #     shell:
+# #         "singularity run  {SingImage} python3 {scriptPath}/trRosetta-2chain.py {input.NPZ} {input.A} {input.B} {output}"
