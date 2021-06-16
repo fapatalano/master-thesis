@@ -7,7 +7,6 @@ Last updated: 30/04/2021
 
 This script takes as input one or more trrosetta output file and discriminate interchain and intrachain connections
 according to the tertiary structure of the monomer.
-In case of files with more than 1 biological assembly, only the first one  is considered.
 """
 
 import argparse
